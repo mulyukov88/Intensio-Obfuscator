@@ -4,11 +4,10 @@
 
 #---------------------------------------------------------- [Lib] -----------------------------------------------------------#
 
-import fileinput
+import os
 import random
 import textwrap
 import re
-import sys
 from progress.bar import Bar
 
 try:
@@ -22,7 +21,8 @@ except ModuleNotFoundError:
 
 class Padding:
     
-    def __init__(self):
+    def __init__(self, encoding='utf8'):
+        self.__fileEncoding = encoding
         self.mixer          = Mixer()
         self.utils          = Utils()
         self.simpleSpace    = " "
@@ -371,7 +371,7 @@ class Padding:
         # -- Count the number of lines that will be checked before filling -- #
         with Bar("Setting up  ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with open(file , "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         if not eachLine:
@@ -384,12 +384,14 @@ class Padding:
         # --  Add padding script -- #
         with Bar("Obfuscation ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with fileinput.input(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outputFile:
                     for eachLine in inputFile:
                         if eachLine == "\n":
                             continue
                         else:
-                            sys.stdout.write(eachLine)
+                            outputFile.write(eachLine)
                             spaces = len(eachLine) - len(eachLine.lstrip())
 
                             if comma == 1:
@@ -434,7 +436,7 @@ class Padding:
                             # -- Adding scripts -- #
                             elif re.match(Reg.addIndentScript, eachLine):
                                 spaces = spaces + basicIndentArg # add indentation
-                                sys.stdout.write(textwrap.indent(Padding.ScriptsGenerator(
+                                outputFile.write(textwrap.indent(Padding.ScriptsGenerator(
                                                                                         self,
                                                                                         randomClassesFunctions=False,
                                                                                         mixerLengthArg=mixerLengthArg), 
@@ -443,7 +445,7 @@ class Padding:
                                 countScriptsAdded += 1
                             else:
                                 if spaces == 0:
-                                    sys.stdout.write(textwrap.indent(Padding.ScriptsGenerator(
+                                    outputFile.write(textwrap.indent(Padding.ScriptsGenerator(
                                                                                             self,
                                                                                             randomClassesFunctions=True,
                                                                                             mixerLengthArg=mixerLengthArg), 
@@ -451,21 +453,22 @@ class Padding:
                                     )
                                     countScriptsAdded += 1
                                 else:
-                                    sys.stdout.write(textwrap.indent(Padding.ScriptsGenerator(
+                                    outputFile.write(textwrap.indent(Padding.ScriptsGenerator(
                                                                                             self,
                                                                                             randomClassesFunctions=False,
                                                                                             mixerLengthArg=mixerLengthArg), 
                                                                                             self.simpleSpace * spaces)
                                     )
                                     countScriptsAdded += 1
-
+                os.remove(file)
+                os.rename(tmpfileName, file)
                 bar.next(1)
             bar.finish()
 
         # -- Check if padding has added in output script -- #
         with Bar("Check       ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with open(file , "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         if not eachLine:
@@ -510,13 +513,13 @@ class Padding:
                 numberLineInFile    = 0
                 numberLine          = 0
                 # -- Count all line(s) in file -- #
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         numberLineInFile += 1
 
                 # -- Find empty class(es) in dict -- #
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         numberLine += 1
@@ -540,7 +543,10 @@ class Padding:
     
                 # -- Add padding in empty class(es) -- #
                 numberLine = 0
-                with fileinput.input(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outfile:
+
                     for eachLine in inputFile:
                         numberLine += 1
                         if counterToCheckIndent == 1:
@@ -551,9 +557,9 @@ class Padding:
                                 paddingVar2 = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
                                 finalVarPadding = "{} = '{}'\n".format(paddingVar1, paddingVar2)
                                 spacesClass = spacesClass + basicIndentArg
-                                sys.stdout.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesClass))                                                                
+                                outfile.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesClass))
                                 numberLine += 1
-                        sys.stdout.write(eachLine)
+                        outfile.write(eachLine)
                         if re.match(Reg.checkClassInLine, eachLine):
                             spacesClass = len(eachLine) - len(eachLine.lstrip())
                             if numberLine == numberLineInFile: # If empty class in last line
@@ -561,10 +567,11 @@ class Padding:
                                 paddingVar2 = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
                                 finalVarPadding = "{} = '{}'\n".format(paddingVar1, paddingVar2)
                                 spacesClass = spacesClass + basicIndentArg
-                                sys.stdout.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesClass))  
+                                outfile.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesClass))
                             else:
                                 counterToCheckIndent += 1
-
+                os.remove(file)
+                os.rename(tmpfileName, file)
                 bar.next(1)
             bar.finish()
 
@@ -574,7 +581,7 @@ class Padding:
                 for file in recursFiles:
                     numberLineInFile    = 0
                     numberLine          = 0
-                    with open(file, "r") as readFile:
+                    with open(file, "r", encoding=self.__fileEncoding) as readFile:
                         readF = readFile.readlines()
                         for eachLine in readF:
                             numberLine += 1
@@ -641,13 +648,14 @@ class Padding:
                 numberLineInFile    = 0
                 numberLine          = 0
                 # -- Count all line(s) in file -- #
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         numberLineInFile += 1
 
                 # -- Find empty function(s) in dict -- #
-                with open(file, "r") as readFile:
+
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         numberLine += 1
@@ -670,8 +678,10 @@ class Padding:
                                 search = re.search(Reg.detectFunctions, eachLine)
 
                 # -- Add padding in empty function(s) -- #
+                tmpfileName = file + '.tmp'
                 numberLine = 0
-                with fileinput.input(file, inplace=True) as inputFile:
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outFile:
                     for eachLine in inputFile:
                         numberLine += 1
                         if counterToCheckIndent == 1:
@@ -682,9 +692,9 @@ class Padding:
                                 paddingVar2 = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
                                 finalVarPadding = "{} = '{}'\n".format(paddingVar1, paddingVar2)
                                 spacesFunc = spacesFunc + basicIndentArg
-                                sys.stdout.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesFunc))                                                                
+                                outFile.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesFunc))
                                 numberLine += 1 
-                        sys.stdout.write(eachLine)
+                        outFile.write(eachLine)
                         if re.match(Reg.checkFunctionInLine, eachLine):
                             spacesFunc = len(eachLine) - len(eachLine.lstrip())
                             if numberLine == numberLineInFile: # IIf empty function last line
@@ -692,9 +702,11 @@ class Padding:
                                 paddingVar2 = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
                                 finalVarPadding = "{} = '{}'\n".format(paddingVar1, paddingVar2)
                                 spacesFunc = spacesFunc + basicIndentArg
-                                sys.stdout.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesFunc))          
+                                outFile.write(textwrap.indent(finalVarPadding, self.simpleSpace * spacesFunc))
                             else:
                                 counterToCheckIndent += 1
+                os.remove(file)
+                os.rename(tmpfileName, file)
 
                 bar.next(1)
             bar.finish()
@@ -705,7 +717,7 @@ class Padding:
                 for file in recursFiles:
                     numberLineInFile    = 0
                     numberLine          = 0
-                    with open(file, "r") as readFile:
+                    with open(file, "r", encoding=self.__fileEncoding) as readFile:
                         readF = readFile.readlines()
                         for eachLine in readF:
                             numberLine += 1

@@ -40,6 +40,7 @@
 --excludefiles              ->  file to exclude file name (check documentation for the format) only for 'rfn, --replacefilename' \
                                 obfuscation feature
 -rth, --replacetohex        ->  enable 'replace string to hex' obfuscation feature (python 2 target files only)
+-fenc, --file_encoding      ->  Specify python files encoding
 --version                   ->  check current version
 -v, --verbose               ->  improve verbosity
 
@@ -93,6 +94,8 @@ def main():
         print("\n[*] version : {}\n".format(__version__))
         if len(sys.argv) == 2:
             sys.exit(0)
+
+    file_encoding = args.GetArgsValue().file_encoding
 
     if args.GetArgsValue().input:
         if args.GetArgsValue().output:
@@ -151,7 +154,7 @@ def main():
 
     print("\n\n" + Colors.SECTION + "********************** [ Obfuscation delete comments ] ***********************" \
      + Colors.DISABLE + "\n")
-    deleteData = Delete()
+    deleteData = Delete(file_encoding)
     deleteCommentsData = deleteData.Comments(
                                             outputArg=args.GetArgsValue().output,
                                             verboseArg=args.GetArgsValue().verbose
@@ -168,7 +171,7 @@ def main():
     if deleteData:
         pass
     else:
-        deleteData = Delete()
+        deleteData = Delete(file_encoding)
 
     deleteLinesSpacesData = deleteData.LinesSpaces(
                                                     outputArg=args.GetArgsValue().output,
@@ -185,7 +188,7 @@ def main():
       # -- If empty class (avert to generate an error) -- #
     print("\n\n" + Colors.SECTION + "******************* [ Correction padding empty class(es) ] *******************" \
         + Colors.DISABLE + "\n")
-    paddingData             = Padding()
+    paddingData             = Padding(file_encoding)
     paddingDataEmptyClass   = paddingData.EmptyClasses(
                                                         outputArg=args.GetArgsValue().output,
                                                         mixerLengthArg=args.GetArgsValue().mixerlength,
@@ -205,7 +208,7 @@ def main():
     if paddingData:
         pass
     else:
-        paddingData = Padding()
+        paddingData = Padding(file_encoding)
 
     paddingDataEmptyFunc = paddingData.EmptyFunctions(
                                                     outputArg=args.GetArgsValue().output,
@@ -223,7 +226,7 @@ def main():
     print("\n\n" + Colors.SECTION + "************ [ Obfuscation replace string(s) to string(s) mixed ] ************" \
         + Colors.DISABLE + "\n")
     if args.GetArgsValue().replacetostr:
-        replaceData = Replace()
+        replaceData = Replace(file_encoding)
 
         replaceDataStrStr = replaceData.StringToString(
                                                         outputArg=args.GetArgsValue().output,
@@ -246,7 +249,7 @@ def main():
         if paddingData:
             pass
         else:
-            paddingData = Padding()
+            paddingData = Padding(file_encoding)
 
         paddingDataGarbage = paddingData.AddRandomScripts(
                                                         outputArg=args.GetArgsValue().output,
@@ -269,7 +272,7 @@ def main():
         if args.GetArgsValue().replacetostr:
             pass
         else:
-            replaceData = Replace()
+            replaceData = Replace(file_encoding)
         print(args.GetArgsValue().excludefiles)
         replaceDataStrFname = replaceData.FilesName(
                                                     outputArg=args.GetArgsValue().output,
@@ -292,7 +295,7 @@ def main():
         if args.GetArgsValue().replacetostr or args.GetArgsValue().replacefilename:
             pass
         else:
-            replaceData = Replace()
+            replaceData = Replace(file_encoding)
 
         replaceDataStrHex = replaceData.StringsToHex(
                                                     outputArg=args.GetArgsValue().output,
@@ -316,7 +319,7 @@ def main():
         if deleteData:
             pass
         else:
-            deleteData = Delete()
+            deleteData = Delete(file_encoding)
 
         deleteLinesSpacesData = deleteData.LinesSpaces(
                                                         outputArg=args.GetArgsValue().output,
@@ -335,7 +338,7 @@ def main():
     if deleteData:
         pass
     else:
-        deleteData = Delete()
+        deleteData = Delete(file_encoding)
 
     deletePycData = deleteData.TrashFiles(
                                         outputArg=args.GetArgsValue().output,

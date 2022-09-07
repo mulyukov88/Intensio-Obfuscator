@@ -74,6 +74,11 @@ class Args:
                                 help="activate 'replace string to hex' obfuscation feature (python 2 files only)"
         )
         self.parser.add_argument(
+                                "-fenc", "--file_encoding",
+                                default=None,
+                                help="Specify python files encoding"
+        )
+        self.parser.add_argument(
                                 "--version",
                                 action="store_true",
                                 default=False,

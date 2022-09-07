@@ -5,9 +5,7 @@
 #---------------------------------------------------------- [Lib] -----------------------------------------------------------#
 
 import re
-import fileinput
 import os
-import sys
 from progress.bar import Bar
 
 try:
@@ -23,7 +21,10 @@ except ModuleNotFoundError:
 
 class Replace:
 
-    def __init__(self):
+    __fileEncoding = 'utf8'
+
+    def __init__(self, encoding='utf8'):
+        self.__fileEncoding = encoding
         self.mixer  = Mixer()
         self.utils  = Utils()
 
@@ -237,7 +238,7 @@ class Replace:
         # -- Replace variables/classes/functions to random strings with length defined -- #
         with Bar("Setting up  ", fill="=", max=100, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         # -- Variables -- #
@@ -308,7 +309,7 @@ class Replace:
             bar.next(10)
 
             if excludeWordsByUser != False:
-                with open(excludeWordsByUser, "r") as readFile:
+                with open(excludeWordsByUser, "r", encoding=self.__fileEncoding) as readFile:
                     for word in readFile:
                         if "#" in word or word == "\n":
                             continue
@@ -412,7 +413,9 @@ class Replace:
         with Bar("Obfuscation ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
                 # -- Replace variable(s) only -- #
-                with fileinput.input(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outputFile:
                     for eachLine in inputFile:
                         if not eachLine:
                             continue
@@ -427,12 +430,12 @@ class Replace:
                                                                 fileNameImport=False,
                                                                 listModuleImport=False
                                         )
-                                        sys.stdout.write(eachLine)
+                                        outputFile.write(eachLine)
                                         multipleLinesQuotes = 0
                                     else:
-                                        sys.stdout.write(eachLine)
+                                        outputFile.write(eachLine)
                                 else:
-                                    sys.stdout.write(eachLine)
+                                    outputFile.write(eachLine)
                             elif re.match(Reg.checkIfVarMultipleQuotes, eachLine) \
                             or re.match(Reg.checkIfStdoutMultipleQuotes, eachLine):
                                 if self.utils.DetectMultipleLinesQuotes(eachLine) == False:
@@ -446,7 +449,7 @@ class Replace:
                                                             fileNameImport=False,
                                                             listModuleImport=False
                                 )
-                                sys.stdout.write(eachLine)
+                                outputFile.write(eachLine)
                                 continue
 
                             else:
@@ -457,7 +460,9 @@ class Replace:
                                                             fileNameImport=False,
                                                             listModuleImport=False
                                 )
-                                sys.stdout.write(eachLine)
+                                outputFile.write(eachLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
 
                 bar.next(1)
             bar.finish()
@@ -465,7 +470,7 @@ class Replace:
         with Bar("Check       ", fill="=", max=100, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
                 # -- Check if variables/classes/functions have been mixed -- #
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         for key, value in allDict.items():
@@ -542,22 +547,24 @@ class Replace:
             for file in recursFiles:
                 # -- Add a new first random line and move the old first line to the second line to avoid replacing it -- #
                 checkPrint = 0 # initialize check print() func at the begining of each file
-                with open(file, "r") as inputFile:
+                with open(file, "r", encoding=self.__fileEncoding) as inputFile:
                     stringRandomMixer = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
                     firstLine   = "{}\n".format(stringRandomMixer)
                     line        = inputFile.readlines()
 
                     line.insert(0, firstLine)
 
-                with open(file, "w") as inputFile:
+                with open(file, "w", encoding=self.__fileEncoding) as inputFile:
                     inputFile.writelines(line)
 
                 # -- Replace all lines-- #
-                with fileinput.input(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outputFile:
                     for eachLine in inputFile:
                         if checkPrint == 0:
                             varMixer = self.mixer.GetStringMixer(mixerLengthArgDefined=mixerLengthArg)
-                            sys.stdout.write(varMixer + "=\"\"\"")
+                            outputFile.write(varMixer + "=\"\"\"")
                             checkPrint = 1
                         else:
                             getLetterLineList = []
@@ -577,10 +584,12 @@ class Replace:
                                     letterToHex = "\\x" + str(letterLine.encode("utf-8").hex())
                                     getLetterLineList.append(letterToHex) # Get list of all letters in line
                             hexLine = "".join(getLetterLineList)
-                            sys.stdout.write(hexLine)
+                            outputFile.write(hexLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
 
                 # -- Add exec funtions to interpret hex code in strings -- #
-                with open(file, "a") as inputFile:
+                with open(file, "a", encoding=self.__fileEncoding) as inputFile:
                     inputFile.write("\"\"\"")
                     inputFile.write("\nexec({})".format(varMixer))
 
@@ -591,7 +600,7 @@ class Replace:
             for file in recursFiles:
                 numberLine = 0
                 # -- Check if all lines are replaced of hexadecimal value -- #
-                with open(file, "r") as inputFile:
+                with open(file, "r", encoding=self.__fileEncoding) as inputFile:
                     for eachLine in inputFile:
                         numberLine += 1
                         if not eachLine:
@@ -726,7 +735,7 @@ class Replace:
 
             # -- Check if file name in code is after 'import' native python function --#
             for file in recursFiles:
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         if re.match(Reg.detectPythonImport, eachLine):
@@ -793,7 +802,9 @@ class Replace:
         with Bar("Obfuscation ", fill="=", max=100, suffix="%(percent)d%%") as bar:
             for fileInCode in recursFilesWithInit:
                 # -- Rename all files in python code -- #
-                with fileinput.input(fileInCode, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outputFile:
                     for eachLine in inputFile:
                         if re.match(Reg.detectPythonImport, eachLine):
                             eachLine = Replace.EachLine(
@@ -803,10 +814,12 @@ class Replace:
                                                         fileNameImport=True,
                                                         listModuleImport=False
                             )
-                            sys.stdout.write(eachLine)
+                            outputFile.write(eachLine)
                             continue
                         else:
-                            sys.stdout.write(eachLine)
+                            outputFile.write(eachLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
             
             bar.next(50)
 

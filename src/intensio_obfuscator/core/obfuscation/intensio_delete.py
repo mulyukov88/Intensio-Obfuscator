@@ -5,9 +5,7 @@
 #---------------------------------------------------------- [Lib] -----------------------------------------------------------#
 
 import re
-import fileinput
 import os
-import sys
 from progress.bar import Bar
 
 try:
@@ -19,7 +17,8 @@ except ModuleNotFoundError:
 
 class Delete:
 
-    def __init__(self):
+    def __init__(self, encoding='utf8'):
+        self.__fileEncoding = encoding
         self.utils = Utils()
 
 
@@ -44,21 +43,24 @@ class Delete:
         # -- Delete all empty lines -- #
         with Bar("Obfuscation ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with fileinput.FileInput(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outfile:
                     for eachLine in inputFile:
                         if re.match(Reg.detectLineEmpty, eachLine):
                             checkEmptyLineInput += 1
                             pass
                         else:
-                            sys.stdout.write(eachLine)
-
+                            outfile.write(eachLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
                 bar.next(1)
             bar.finish()
 
         with Bar("Check       ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
                 numberLine = 0
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         numberLine += 1
@@ -112,10 +114,12 @@ class Delete:
 
         with Bar("Obfuscation ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with fileinput.input(file, inplace=True) as inputFile:
+                tmpfileName = file + '.tmp'
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outfile:
                     for eachLine in inputFile:
                         if re.match(Reg.pythonFileHeader, eachLine):
-                            sys.stdout.write(eachLine)
+                            outfile.write(eachLine)
                         else:
                             if multipleLinesComments == 1:
                                 if re.match(Reg.quotesCommentsEndMultipleLines, eachLine):
@@ -129,10 +133,10 @@ class Delete:
                                     countLineCommentInput += 1
                             elif noCommentsQuotes == 1:
                                 if re.match(Reg.checkIfEndVarStdoutMultipleQuotes, eachLine):
-                                    sys.stdout.write(eachLine)
+                                    outfile.write(eachLine)
                                     noCommentsQuotes = 0
                                 else:
-                                    sys.stdout.write(eachLine)
+                                    outfile.write(eachLine)
                             else:
                                 if re.match(Reg.quotesCommentsOneLine, eachLine):
                                     countLineCommentInput += 1
@@ -142,21 +146,24 @@ class Delete:
                                             countLineCommentInput += 1
                                             multipleLinesComments = 1
                                         else:
-                                            sys.stdout.write(eachLine)
+                                            outfile.write(eachLine)
                                     else:
                                         if re.match(Reg.checkIfStdoutMultipleQuotes, eachLine) \
                                         or re.match(Reg.checkIfVarMultipleQuotes, eachLine):
-                                            sys.stdout.write(eachLine)
+                                            outfile.write(eachLine)
                                             noCommentsQuotes = 1
                                         elif re.match(Reg.checkIfRegexMultipleQuotes, eachLine):
-                                            sys.stdout.write(eachLine)
+                                            outfile.write(eachLine)
                                         else:
-                                            sys.stdout.write(eachLine)
+                                            outfile.write(eachLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
 
-                with fileinput.input(file, inplace=True) as inputFile:
+                with open(file, 'r', encoding=self.__fileEncoding) as inputFile,\
+                     open(tmpfileName, 'w', encoding=self.__fileEncoding) as outfile:
                     for eachLine in inputFile:
                         if re.match(Reg.pythonFileHeader, eachLine):
-                            sys.stdout.write(eachLine)
+                            outfile.write(eachLine)
                         else:
                             if re.match(Reg.hashCommentsBeginLine, eachLine):
                                 countLineCommentInput += 1
@@ -187,21 +194,22 @@ class Delete:
                                     eachLineList = eachLineList[:getIndex]
                                     eachLineList.append("\n")
                                     eachLine = "".join(eachLineList)
-                                    sys.stdout.write(eachLine)
+                                    outfile.write(eachLine)
                                     detectIntoSimpleQuotes = None
                                     countLineCommentInput += 1
                                 else:
-                                    sys.stdout.write(eachLine)
+                                    outfile.write(eachLine)
                             else:
-                                sys.stdout.write(eachLine)
-
+                                outfile.write(eachLine)
+                os.remove(file)
+                os.rename(tmpfileName, file)
                 bar.next(1)
             bar.finish()
 
         # -- Check if all comments are deleted -- #
         with Bar("Check       ", fill="=", max=countRecursFiles, suffix="%(percent)d%%") as bar:
             for file in recursFiles:
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         if re.match(Reg.pythonFileHeader, eachLine):
@@ -246,7 +254,7 @@ class Delete:
                                         else:
                                             continue
                   
-                with open(file, "r") as readFile:
+                with open(file, "r", encoding=self.__fileEncoding) as readFile:
                     readF = readFile.readlines()
                     for eachLine in readF:
                         if re.match(Reg.pythonFileHeader, eachLine):
